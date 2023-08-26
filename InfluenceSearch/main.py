@@ -11,6 +11,7 @@ templates = Jinja2Templates(directory="templates")
 client = MongoClient("mongodb+srv://frozy:admin12@cluster0.v2thrmo.mongodb.net/?retryWrites=true&w=majority")
 db = client['users']
 collection = db['search']
+collection1 = db['visitors']
 
 DEVELOPER_KEY = 'AIzaSyDkwfihxOsnd2XRRyJOhQTNDS8TVSKVjik'
 YOUTUBE_API_SERVICE_NAME = "youtube"
@@ -100,6 +101,20 @@ async def home(request: Request):
     print(country)
     print(region)
     print(city)
+
+
+    data_to_insert = {
+    "User Ip": user_ip,
+    "User agent": user_agent,
+    "Referer": referrer,
+    "Country": country,
+    "Region": region,
+    "City": city
+    }
+
+    inserted_data = collection1.insert_one(data_to_insert)
+
+    print(f"Data sent to database")
 
     return templates.TemplateResponse("home.html", {"request": request})
 
