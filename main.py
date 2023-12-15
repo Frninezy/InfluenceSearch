@@ -215,4 +215,4 @@ def error():
     return render_template("error_traffic.html")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
