@@ -16,6 +16,7 @@ db = client['users']
 collection = db['search']
 collection1 = db['visitors']
 collection2 = db['email_data']
+collection3 = db['influencers_database']
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -58,6 +59,19 @@ def search_videos_by_keyword_category_and_subscriber_count(keyword, min_subscrib
                 else:
                     custom_urls[channel_id] = None
 
+                # Create a document for the influencer
+                influencer_data = {
+                    "keyword": keyword,
+                    "channel_name": channel["snippet"]["title"],
+                    "subscriber_count": subscriber_counts[channel_id],
+                    "channel_url": f"https://www.youtube.com/{channel_id}",
+                    "channel_image": channel_icons[channel_id],
+                    "custom_url": custom_urls[channel_id]
+                }
+
+                # Insert the influencer data into the database
+                collection3.insert_one(influencer_data)
+
             video_response = youtube.videos().list(
                 part="snippet, statistics",
                 id=",".join(video_ids),
@@ -90,6 +104,7 @@ def search_videos_by_keyword_category_and_subscriber_count(keyword, min_subscrib
             return None
 
     return channel_videos
+
 
 @app.route("/", methods=['GET', 'POST'])
 def home():
@@ -215,4 +230,4 @@ def error():
     return render_template("error_traffic.html")
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=1900)
