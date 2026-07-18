@@ -1,0 +1,23 @@
+.main-part {
+    width: 90%;
+    max-width: 400px;
+    margin: 0;
+    font-size: 25px;
+    padding-top: 180px;
+}
+
+.main-part form {
+    width: 100%;
+}
+
+@media (min-width: 640px) {
+    .main-part {
+        max-width: 600px;
+    }
+}
+
+@media (min-width: 768px) {
+    .main-part {
+        max-width: 800px;
+    }
+}
