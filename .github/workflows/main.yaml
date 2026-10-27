@@ -1,5 +1,5 @@
 
-name: Test Docker Compose
+name: Test Docker Compose and Deploy
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
           docker compose version
 
       - name: Validate Compose configuration
-        run: docker compose config
+        run: docker compose config -q
 
       - name: Build containers
         run: docker compose build
@@ -51,3 +51,20 @@ jobs:
       - name: Stop containers
         if: always()
         run: docker compose down
+
+  deploy:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to AWS EC2 via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/InfluenceSearch
+            git pull origin main
+            docker compose up -d --build
