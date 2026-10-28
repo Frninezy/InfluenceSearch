@@ -65,7 +65,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            if [ -d "InfluenceSearch/.git" ]; then
+            if [ -d "InfluenceSearch" ]; then
               echo "Repository exists. Updating..."
               cd InfluenceSearch
               git pull origin main
