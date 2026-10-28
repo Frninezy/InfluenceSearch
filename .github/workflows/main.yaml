@@ -69,7 +69,9 @@ jobs:
             if [ -d "InfluenceSearch" ]; then
               echo "Repository exists. Updating..."
               cd InfluenceSearch
+              sudo docker compose down
               git pull origin main
+              sudo docker compose up
             else
               echo "Repository not found. Cloning..."
               git clone https://github.com/Frninezy/InfluenceSearch.git
