@@ -71,6 +71,6 @@ jobs:
               git pull origin main
             else
               echo "Repository not found. Cloning..."
-              git clone https://github.com/YOUR_USERNAME/InfluenceSearch.git
+              git clone https://github.com/Frninezy/InfluenceSearch.git
               cd InfluenceSearch
             fi
