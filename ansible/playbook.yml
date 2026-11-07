@@ -8,8 +8,18 @@
     app_directory: /home/ubuntu/InfluenceSearch
     repository: https://github.com/Frninezy/InfluenceSearch.git
 
-  tasks:
+  pre_tasks:
+    - name: Add EC2 instances to SSH known_hosts
+      ansible.builtin.known_hosts:
+        name: "{{ ansible_host | default(inventory_hostname) }}"
+        key: "{{ lookup('pipe', 'ssh-keyscan -T 10 -H ' ~ (ansible_host | default(inventory_hostname))) }}"
+        path: ~/.ssh/known_hosts
+        state: present
+      delegate_to: localhost
+      become: false
+      run_once: false
 
+  tasks:
     - name: Update apt package cache
       ansible.builtin.apt:
         update_cache: yes
