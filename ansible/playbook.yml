@@ -4,7 +4,7 @@
   become: true
   vars:
     repo_url: https://github.com/Frninezy/InfluenceSearch.git
-    repo_dest: /opt/InfluenceSearch
+    repo_dest: /home/ubuntu/InfluenceSearch
     docker_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
 
   tasks:
@@ -61,11 +61,18 @@
         enabled: true
         state: started
 
+    - name: Let ubuntu user run docker without sudo
+      ansible.builtin.user:
+        name: ubuntu
+        groups: docker
+        append: true
+
     - name: Verify docker compose is installed
       ansible.builtin.command: docker compose version
       changed_when: false
 
-    - name: Clone or update the repository
+    - name: Clone or update the repository (as ubuntu)
+      become_user: ubuntu
       ansible.builtin.git:
         repo: "{{ repo_url }}"
         dest: "{{ repo_dest }}"
@@ -79,6 +86,13 @@
       register: compose_result
       changed_when: "'Started' in compose_result.stderr or 'Created' in compose_result.stderr or 'Recreated' in compose_result.stderr"
 
-    - name: Show compose output
+    - name: Show running containers
+      ansible.builtin.command:
+        cmd: docker compose ps
+        chdir: "{{ repo_dest }}"
+      register: compose_ps
+      changed_when: false
+
+    - name: Print containers
       ansible.builtin.debug:
-        var: compose_result.stderr_lines
+        var: compose_ps.stdout_lines
