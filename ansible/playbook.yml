@@ -12,7 +12,7 @@
     - name: Add EC2 instances to SSH known_hosts
       ansible.builtin.known_hosts:
         name: "{{ ansible_host | default(inventory_hostname) }}"
-        key: "{{ lookup('pipe', 'ssh-keyscan -T 10 -H ' ~ (ansible_host | default(inventory_hostname))) }}"
+        key: "{{ lookup('pipe', 'ssh-keyscan -T 10 -t ed25519 ' ~ (ansible_host | default(inventory_hostname))) }}"
         path: ~/.ssh/known_hosts
         state: present
       delegate_to: localhost
@@ -96,7 +96,6 @@
       ansible.builtin.command:
         cmd: docker compose down
         chdir: "{{ app_directory }}"
-      become_user: ubuntu
       failed_when: false
       changed_when: false
 
@@ -104,13 +103,11 @@
       ansible.builtin.command:
         cmd: docker compose up -d --build
         chdir: "{{ app_directory }}"
-      become_user: ubuntu
 
     - name: Verify running containers
       ansible.builtin.command:
         cmd: docker compose ps
         chdir: "{{ app_directory }}"
-      become_user: ubuntu
       register: compose_status
       changed_when: false
 
