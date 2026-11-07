@@ -1,3 +1,4 @@
+
 name: Ansible Deployment
 
 on:
@@ -35,10 +36,11 @@ jobs:
         run: |
           ansible-galaxy collection install amazon.aws
 
-      # Configure SSH
+      # Configure SSH private key
       - name: Configure SSH key
         run: |
           mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
           chmod 600 ~/.ssh/ec2_key
 
@@ -48,6 +50,12 @@ jobs:
           ansible-inventory \
             -i ansible/aws_ec2.yml \
             --graph
+
+      # Configure SSH host key verification
+      - name: Configure SSH known hosts
+        run: |
+          ssh-keyscan -H 18.153.90.144 63.176.147.196 >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
       # Deploy application
       - name: Run Ansible playbook
