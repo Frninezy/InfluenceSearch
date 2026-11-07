@@ -7,7 +7,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket       = "influence-search-terraform-state-140862068467"
+    bucket       = "terraform-state-levon-2026"
     key          = "influence-search/terraform.tfstate"
     region       = "eu-central-1"
     encrypt      = true
