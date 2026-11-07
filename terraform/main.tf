@@ -1,9 +1,18 @@
+
 terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+  }
+
+  backend "s3" {
+    bucket       = "influence-search-terraform-state-140862068467"
+    key          = "influence-search/terraform.tfstate"
+    region       = "eu-central-1"
+    encrypt      = true
+    use_lockfile = true
   }
 }
 
@@ -55,14 +64,14 @@ resource "aws_security_group" "ec2_sg" {
     protocol        = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
   }
-  
+
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -99,8 +108,7 @@ resource "aws_lb" "app_lb" {
   load_balancer_type = "application"
 
   security_groups = [aws_security_group.alb_sg.id]
-
-  subnets = data.aws_subnets.default.ids
+  subnets         = data.aws_subnets.default.ids
 }
 
 resource "aws_lb_target_group" "target_group" {
