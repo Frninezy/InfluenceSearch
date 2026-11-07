@@ -1,0 +1,21 @@
+---
+plugin: amazon.aws.aws_ec2
+
+regions:
+  - eu-central-1
+  - us-west-1
+  - us-west-2
+
+filters:
+  instance-state-name: running
+
+hostnames:
+  - ip-address
+
+compose:
+  ansible_host: public_ip_address
+
+keyed_groups:
+  - key: placement.region
+    prefix: region
+    separator: "_"

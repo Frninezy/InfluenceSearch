@@ -1,0 +1,77 @@
+---
+- name: Deploy InfluenceSearch on AWS EC2
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    app_directory: /home/ubuntu/InfluenceSearch
+    repository: https://github.com/Frninezy/InfluenceSearch.git
+
+  tasks:
+
+    - name: Update apt package cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - git
+        state: present
+
+    - name: Create apt keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+        update_cache: yes
+
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+
+    - name: Start Docker service
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Clone or update application
+      ansible.builtin.git:
+        repo: "{{ repository }}"
+        dest: "{{ app_directory }}"
+        version: main
+        force: yes
+
+    - name: Stop existing application containers
+      ansible.builtin.command:
+        cmd: docker compose down
+        chdir: "{{ app_directory }}"
+
+    - name: Deploy application
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ app_directory }}"
