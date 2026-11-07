@@ -1,31 +1,18 @@
 ---
-- name: Deploy InfluenceSearch on AWS EC2
-  hosts: all
-  become: yes
-  gather_facts: yes
-
+- name: Deploy InfluenceSearch with Docker
+  hosts: tag_project_InfluenceSearch
+  become: true
   vars:
-    app_directory: /home/ubuntu/InfluenceSearch
-    repository: https://github.com/Frninezy/InfluenceSearch.git
-
-  pre_tasks:
-    - name: Add EC2 instances to SSH known_hosts
-      ansible.builtin.known_hosts:
-        name: "{{ ansible_host | default(inventory_hostname) }}"
-        key: "{{ lookup('pipe', 'ssh-keyscan -T 10 -t ed25519 ' ~ (ansible_host | default(inventory_hostname))) }}"
-        path: ~/.ssh/known_hosts
-        state: present
-      delegate_to: localhost
-      become: false
-      run_once: false
+    repo_url: https://github.com/Frninezy/InfluenceSearch.git
+    repo_dest: /opt/InfluenceSearch
+    docker_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
 
   tasks:
-    - name: Update apt package cache
+    - name: Update apt cache
       ansible.builtin.apt:
-        update_cache: yes
-        cache_valid_time: 3600
+        update_cache: true
 
-    - name: Install required packages
+    - name: Install prerequisites
       ansible.builtin.apt:
         name:
           - ca-certificates
@@ -37,33 +24,25 @@
       ansible.builtin.file:
         path: /etc/apt/keyrings
         state: directory
-        mode: '0755'
+        mode: "0755"
 
     - name: Download Docker GPG key
       ansible.builtin.get_url:
         url: https://download.docker.com/linux/ubuntu/gpg
         dest: /etc/apt/keyrings/docker.asc
-        mode: '0644'
+        mode: "0644"
 
-    - name: Add Docker repository
-      ansible.builtin.deb822_repository:
-        name: docker
-        types: deb
-        uris: https://download.docker.com/linux/ubuntu
-        suites: "{{ ansible_distribution_release }}"
-        components:
-          - stable
-        architectures:
-          - "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
-        signed_by: /etc/apt/keyrings/docker.asc
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ docker_arch }} signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu
+          {{ ansible_distribution_release }} stable
+        filename: docker
         state: present
-        enabled: yes
+        update_cache: true
 
-    - name: Update apt cache after adding Docker repository
-      ansible.builtin.apt:
-        update_cache: yes
-
-    - name: Install Docker
+    - name: Install Docker packages
       ansible.builtin.apt:
         name:
           - docker-ce
@@ -73,44 +52,24 @@
           - docker-compose-plugin
         state: present
 
-    - name: Start Docker service
+    - name: Enable and start Docker
       ansible.builtin.systemd:
         name: docker
+        enabled: true
         state: started
-        enabled: yes
 
-    - name: Verify Docker Compose
-      ansible.builtin.command:
-        cmd: docker compose version
-      changed_when: false
-
-    - name: Clone or update application
+    - name: Clone or update the repository
       ansible.builtin.git:
-        repo: "{{ repository }}"
-        dest: "{{ app_directory }}"
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
         version: main
-        force: yes
-      become_user: ubuntu
+        update: true
+      register: repo_status
 
-    - name: Stop existing application containers
-      ansible.builtin.command:
-        cmd: docker compose down
-        chdir: "{{ app_directory }}"
-      failed_when: false
-      changed_when: false
-
-    - name: Deploy application
-      ansible.builtin.command:
-        cmd: docker compose up -d --build
-        chdir: "{{ app_directory }}"
-
-    - name: Verify running containers
-      ansible.builtin.command:
-        cmd: docker compose ps
-        chdir: "{{ app_directory }}"
-      register: compose_status
-      changed_when: false
-
-    - name: Display deployment status
-      ansible.builtin.debug:
-        var: compose_status.stdout
+    - name: Start (or update) the stack
+      community.docker.docker_compose_v2:
+        project_src: "{{ repo_dest }}"
+        state: present
+        build: always         
+        pull: always
+        recreate: auto
