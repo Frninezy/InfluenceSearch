@@ -1,4 +1,4 @@
-name: IaC
+name: Destroy IaC
 
 on:
   workflow_dispatch:
@@ -25,5 +25,8 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-2
 
+      - name: Terraform init
+        run: terraform init
+        
       - name: Terraform destroy
         run: terraform destroy -auto-approve
