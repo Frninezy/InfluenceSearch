@@ -3,8 +3,6 @@ plugin: amazon.aws.aws_ec2
 
 regions:
   - eu-central-1
-  - us-west-1
-  - us-west-2
 
 filters:
   instance-state-name: running
