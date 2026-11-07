@@ -36,10 +36,21 @@
         mode: '0644'
 
     - name: Add Docker repository
-      ansible.builtin.apt_repository:
-        repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+      ansible.builtin.deb822_repository:
+        name: docker
+        types: deb
+        uris: https://download.docker.com/linux/ubuntu
+        suites: "{{ ansible_distribution_release }}"
+        components:
+          - stable
+        architectures:
+          - "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
+        signed_by: /etc/apt/keyrings/docker.asc
         state: present
-        filename: docker
+        enabled: yes
+
+    - name: Update apt cache after adding Docker repository
+      ansible.builtin.apt:
         update_cache: yes
 
     - name: Install Docker
@@ -51,7 +62,6 @@
           - docker-buildx-plugin
           - docker-compose-plugin
         state: present
-        update_cache: yes
 
     - name: Start Docker service
       ansible.builtin.systemd:
@@ -59,19 +69,41 @@
         state: started
         enabled: yes
 
+    - name: Verify Docker Compose
+      ansible.builtin.command:
+        cmd: docker compose version
+      changed_when: false
+
     - name: Clone or update application
       ansible.builtin.git:
         repo: "{{ repository }}"
         dest: "{{ app_directory }}"
         version: main
         force: yes
+      become_user: ubuntu
 
     - name: Stop existing application containers
       ansible.builtin.command:
         cmd: docker compose down
         chdir: "{{ app_directory }}"
+      become_user: ubuntu
+      failed_when: false
+      changed_when: false
 
     - name: Deploy application
       ansible.builtin.command:
-        cmd: docker compose up -d
+        cmd: docker compose up -d --build
         chdir: "{{ app_directory }}"
+      become_user: ubuntu
+
+    - name: Verify running containers
+      ansible.builtin.command:
+        cmd: docker compose ps
+        chdir: "{{ app_directory }}"
+      become_user: ubuntu
+      register: compose_status
+      changed_when: false
+
+    - name: Display deployment status
+      ansible.builtin.debug:
+        var: compose_status.stdout
