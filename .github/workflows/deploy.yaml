@@ -1,0 +1,59 @@
+name: Ansible Deployment
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy InfluenceSearch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # AWS authentication
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      # Install Ansible
+      - name: Install Ansible dependencies
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install ansible boto3 botocore
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
+
+      # Install AWS dynamic inventory plugin
+      - name: Install AWS collection
+        run: |
+          ansible-galaxy collection install amazon.aws
+
+      # Configure SSH
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
+          chmod 600 ~/.ssh/ec2_key
+
+      # Discover EC2 instances
+      - name: Discover EC2 instances
+        run: |
+          ansible-inventory \
+            -i ansible/aws_ec2.yml \
+            --graph
+
+      # Deploy application
+      - name: Run Ansible playbook
+        run: |
+          ansible-playbook \
+            -i ansible/aws_ec2.yml \
+            ansible/playbook.yml \
+            --private-key ~/.ssh/ec2_key \
+            --forks 10
