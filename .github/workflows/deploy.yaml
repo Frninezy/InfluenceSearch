@@ -1,4 +1,3 @@
-
 name: Ansible Deployment
 
 on:
@@ -31,7 +30,7 @@ jobs:
           .venv/bin/pip install ansible boto3 botocore
           echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
 
-      # Install AWS dynamic inventory plugin
+      # Install AWS collection
       - name: Install AWS collection
         run: |
           ansible-galaxy collection install amazon.aws
@@ -41,7 +40,7 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
+          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
           chmod 600 ~/.ssh/ec2_key
 
       # Discover EC2 instances
@@ -64,4 +63,5 @@ jobs:
             -i ansible/aws_ec2.yml \
             ansible/playbook.yml \
             --private-key ~/.ssh/ec2_key \
+            --user ubuntu \
             --forks 10
