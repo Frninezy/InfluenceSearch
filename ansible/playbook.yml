@@ -1,6 +1,6 @@
 ---
 - name: Deploy InfluenceSearch with Docker
-  hosts: tag_project_InfluenceSearch
+  hosts: aws_ec2
   become: true
   vars:
     repo_url: https://github.com/Frninezy/InfluenceSearch.git
@@ -11,6 +11,7 @@
     - name: Update apt cache
       ansible.builtin.apt:
         update_cache: true
+        lock_timeout: 120
 
     - name: Install prerequisites
       ansible.builtin.apt:
@@ -19,6 +20,7 @@
           - curl
           - git
         state: present
+        lock_timeout: 120
 
     - name: Create apt keyrings directory
       ansible.builtin.file:
@@ -51,6 +53,7 @@
           - docker-buildx-plugin
           - docker-compose-plugin
         state: present
+        lock_timeout: 120
 
     - name: Enable and start Docker
       ansible.builtin.systemd:
@@ -58,18 +61,24 @@
         enabled: true
         state: started
 
+    - name: Verify docker compose is installed
+      ansible.builtin.command: docker compose version
+      changed_when: false
+
     - name: Clone or update the repository
       ansible.builtin.git:
         repo: "{{ repo_url }}"
         dest: "{{ repo_dest }}"
         version: main
         update: true
-      register: repo_status
 
     - name: Start (or update) the stack
-      community.docker.docker_compose_v2:
-        project_src: "{{ repo_dest }}"
-        state: present
-        build: always         
-        pull: always
-        recreate: auto
+      ansible.builtin.command:
+        cmd: docker compose up -d --build
+        chdir: "{{ repo_dest }}"
+      register: compose_result
+      changed_when: "'Started' in compose_result.stderr or 'Created' in compose_result.stderr or 'Recreated' in compose_result.stderr"
+
+    - name: Show compose output
+      ansible.builtin.debug:
+        var: compose_result.stderr_lines

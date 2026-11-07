@@ -5,7 +5,7 @@ filters:
   instance-state-name: running
   tag:Project: InfluenceSearch
 hostnames:
-  - ip-address              # public IP, not private-ip-address
+  - ip-address             
 keyed_groups:
   - key: tags.Project
     prefix: tag_project
