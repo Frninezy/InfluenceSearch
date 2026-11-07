@@ -40,11 +40,11 @@
         name: docker
         types: deb
         uris: https://download.docker.com/linux/ubuntu
-        suites: "{{ ansible_facts['distribution_release'] }}"
+        suites: "{{ ansible_distribution_release }}"
         components:
           - stable
         architectures:
-          - "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+          - "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
         signed_by: /etc/apt/keyrings/docker.asc
         state: present
         enabled: yes
@@ -86,6 +86,7 @@
       ansible.builtin.command:
         cmd: docker compose down
         chdir: "{{ app_directory }}"
+      become_user: ubuntu
       failed_when: false
       changed_when: false
 
@@ -93,11 +94,13 @@
       ansible.builtin.command:
         cmd: docker compose up -d --build
         chdir: "{{ app_directory }}"
+      become_user: ubuntu
 
     - name: Verify running containers
       ansible.builtin.command:
         cmd: docker compose ps
         chdir: "{{ app_directory }}"
+      become_user: ubuntu
       register: compose_status
       changed_when: false
 
