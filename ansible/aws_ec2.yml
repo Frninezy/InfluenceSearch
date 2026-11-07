@@ -1,20 +1,14 @@
----
 plugin: amazon.aws.aws_ec2
-
 regions:
   - eu-central-1
-
 filters:
   instance-state-name: running
-
+  tag:Project: InfluenceSearch
 hostnames:
-  - ip-address
-
+  - ip-address              # public IP, not private-ip-address
+keyed_groups:
+  - key: tags.Project
+    prefix: tag_project
 compose:
   ansible_host: public_ip_address
   ansible_user: "'ubuntu'"
-
-keyed_groups:
-  - key: placement.region
-    prefix: region
-    separator: "_"
