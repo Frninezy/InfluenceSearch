@@ -7,7 +7,7 @@ services:
       - ./web:/usr/src/app
     expose:
       - "1900"
-    restart: unless-stopped
+    restart: no
 
   postgres:
     image: postgres:17
@@ -17,13 +17,13 @@ services:
       POSTGRES_DB: Influencers
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
+    restart: no
 
   adminer:
     image: adminer
     expose:
       - "8080"
-    restart: unless-stopped
+    restart: no
 
   nginx:
     image: nginx:alpine
@@ -34,7 +34,7 @@ services:
     depends_on:
       - backend
       - adminer
-    restart: unless-stopped
+    restart: no
 
 volumes:
   postgres_data:
